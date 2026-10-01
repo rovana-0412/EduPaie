@@ -119,7 +119,8 @@ class PaiementService:
             numero_recu=numero_recu,
             id_eleve=id_eleve,
         )
-        self.paiement_repo.ajouter(paiement)
+        id_paiement = self.paiement_repo.ajouter(paiement)
+        paiement.id_paiement = id_paiement
         return paiement
 
     def lister_paiements(self, id_eleve: int) -> List[Paiement]:

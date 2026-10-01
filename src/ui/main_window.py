@@ -91,6 +91,12 @@ class MainWindow(QMainWindow):
         bouton_supprimer = QPushButton("🗑 Supprimer")
         bouton_supprimer.clicked.connect(self._supprimer_eleve)
 
+        bouton_payer = QPushButton("💰 Enregistrer un paiement")
+        bouton_payer.setStyleSheet(
+            "background-color: #10b981; color: white; font-weight: bold; padding: 6px;"
+        )
+        bouton_payer.clicked.connect(self._enregistrer_paiement)
+
         bouton_actualiser = QPushButton("🔄 Actualiser")
         bouton_actualiser.clicked.connect(self._charger_eleves)
 
@@ -98,6 +104,7 @@ class MainWindow(QMainWindow):
         layout_boutons.addWidget(bouton_modifier)
         layout_boutons.addWidget(bouton_supprimer)
         layout_boutons.addStretch()
+        layout_boutons.addWidget(bouton_payer)
         layout_boutons.addWidget(bouton_actualiser)
 
         layout_principal.addLayout(layout_boutons)
@@ -198,4 +205,67 @@ class MainWindow(QMainWindow):
                     self, "Erreur",
                     f"Impossible de supprimer l'élève :\n{e}\n\n"
                     "Vérifiez qu'il n'a pas de paiements associés."
+                )
+    def _enregistrer_paiement(self):
+        """Ouvre le dialogue d'enregistrement d'un paiement."""
+        from src.ui.paiement_dialog import PaiementDialog
+
+        # Vérifier qu'un élève est sélectionné
+        ligne = self.tableau.currentRow()
+        if ligne < 0:
+            QMessageBox.warning(self, "Aucune sélection", "Veuillez sélectionner un élève.")
+            return
+
+        # Récupérer l'élève
+        id_eleve = int(self.tableau.item(ligne, 0).text())
+        eleve = self.eleve_service.eleve_repo.trouver_par_id(id_eleve)
+        if not eleve:
+            QMessageBox.warning(self, "Erreur", "Élève introuvable.")
+            return
+
+        # Calculer le solde actuel
+        solde_info = self.paiement_service.calculer_solde(id_eleve)
+
+        # Vérifier que l'élève n'a pas déjà soldé
+        if solde_info.solde <= 0:
+            QMessageBox.information(
+                self, "Déjà soldé",
+                f"{eleve.nom_complet} a déjà soldé ses frais de scolarité."
+            )
+            return
+
+        # Ouvrir le dialogue
+        dialogue = PaiementDialog(eleve, solde_info.solde, parent=self)
+        if dialogue.exec() == PaiementDialog.Accepted:
+            try:
+                donnees = dialogue.get_donnees_paiement()
+                self.paiement_service.enregistrer_paiement(
+                    id_eleve=id_eleve,
+                    montant=donnees["montant"],
+                    mode_paiement=donnees["mode_paiement"],
+                    date_paiement=donnees["date_paiement"],
+                )
+
+                               # Récupérer le paiement qui vient d'être créé
+                donnees = dialogue.get_donnees_paiement()
+                paiement_cree = self.paiement_service.enregistrer_paiement(
+                    id_eleve=id_eleve,
+                    montant=donnees["montant"],
+                    mode_paiement=donnees["mode_paiement"],
+                    date_paiement=donnees["date_paiement"],
+                )
+
+                nouveau_solde = self.paiement_service.calculer_solde(id_eleve)
+
+                QMessageBox.information(
+                    self, "Paiement enregistré",
+                    f"Paiement enregistré avec succès.\n\n"
+                    f"Numéro de reçu : {paiement_cree.numero_recu}\n"
+                    f"Nouveau solde : {nouveau_solde.solde:,.0f} F CFA"
+                )
+                self._charger_eleves()
+            except Exception as e:
+                QMessageBox.critical(
+                    self, "Erreur",
+                    f"Impossible d'enregistrer le paiement :\n{e}"
                 )
