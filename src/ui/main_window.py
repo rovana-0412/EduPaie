@@ -16,6 +16,9 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QBrush
+
+from src.ui.statut_delegate import StatutDelegate
 
 
 class MainWindow(QMainWindow):
@@ -31,7 +34,7 @@ class MainWindow(QMainWindow):
 
         # Configuration de la fenêtre
         self.setWindowTitle("EduPaie — Gestion des paiements scolaires")
-        self.resize(1000, 600)
+        self.resize(1100, 650)
 
         # Construire l'interface
         self._construire_interface()
@@ -76,7 +79,8 @@ class MainWindow(QMainWindow):
             "Classe", "Montant dû (F)", "Solde restant (F)", "Statut"
         ])
         self.tableau.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.tableau.setSelectionBehavior(QTableWidget.SelectRows)
+
+        self.tableau.setItemDelegateForColumn(7, StatutDelegate(self.tableau))
         layout_principal.addWidget(self.tableau)
 
         # ===== Boutons d'action =====
@@ -94,6 +98,12 @@ class MainWindow(QMainWindow):
         bouton_fiche = QPushButton("📋 Voir la fiche")
         bouton_fiche.clicked.connect(self._voir_fiche)
 
+        bouton_tableau_bord = QPushButton("📊 Tableau de bord")
+        bouton_tableau_bord.setStyleSheet(
+            "background-color: #3b82f6; color: white; font-weight: bold; padding: 6px;"
+        )
+        bouton_tableau_bord.clicked.connect(self._ouvrir_tableau_bord)
+
         bouton_payer = QPushButton("💰 Enregistrer un paiement")
         bouton_payer.setStyleSheet(
             "background-color: #10b981; color: white; font-weight: bold; padding: 6px;"
@@ -107,6 +117,7 @@ class MainWindow(QMainWindow):
         layout_boutons.addWidget(bouton_modifier)
         layout_boutons.addWidget(bouton_supprimer)
         layout_boutons.addWidget(bouton_fiche)
+        layout_boutons.addWidget(bouton_tableau_bord)
         layout_boutons.addStretch()
         layout_boutons.addWidget(bouton_payer)
         layout_boutons.addWidget(bouton_actualiser)
@@ -131,7 +142,6 @@ class MainWindow(QMainWindow):
         # Remplir le tableau
         self.tableau.setRowCount(len(eleves))
         for i, eleve in enumerate(eleves):
-            # Calculer le solde
             solde_info = self.paiement_service.calculer_solde(eleve.id_eleve)
 
             self.tableau.setItem(i, 0, QTableWidgetItem(str(eleve.id_eleve)))
@@ -147,14 +157,14 @@ class MainWindow(QMainWindow):
             item_statut.setTextAlignment(Qt.AlignCenter)
 
             if solde_info.statut == "Soldé":
-                item_statut.setBackground(Qt.green)
-                item_statut.setForeground(Qt.white)
+                item_statut.setBackground(QBrush(QColor("#10b981")))
+                item_statut.setForeground(QBrush(QColor("white")))
             elif solde_info.statut == "Partiellement payé":
-                item_statut.setBackground(Qt.yellow)
-                item_statut.setForeground(Qt.black)
-            else:  # Non payé
-                item_statut.setBackground(Qt.red)
-                item_statut.setForeground(Qt.white)
+                item_statut.setBackground(QBrush(QColor("#f59e0b")))
+                item_statut.setForeground(QBrush(QColor("white")))
+            else:
+                item_statut.setBackground(QBrush(QColor("#ef4444")))
+                item_statut.setForeground(QBrush(QColor("white")))
 
             self.tableau.setItem(i, 7, item_statut)
 
@@ -230,6 +240,7 @@ class MainWindow(QMainWindow):
                     f"Impossible de supprimer l'élève :\n{e}\n\n"
                     "Vérifiez qu'il n'a pas de paiements associés."
                 )
+
     def _enregistrer_paiement(self):
         """Ouvre le dialogue d'enregistrement d'un paiement."""
         from src.ui.paiement_dialog import PaiementDialog
@@ -263,15 +274,6 @@ class MainWindow(QMainWindow):
         if dialogue.exec() == PaiementDialog.Accepted:
             try:
                 donnees = dialogue.get_donnees_paiement()
-                self.paiement_service.enregistrer_paiement(
-                    id_eleve=id_eleve,
-                    montant=donnees["montant"],
-                    mode_paiement=donnees["mode_paiement"],
-                    date_paiement=donnees["date_paiement"],
-                )
-
-                               # Récupérer le paiement qui vient d'être créé
-                donnees = dialogue.get_donnees_paiement()
                 paiement_cree = self.paiement_service.enregistrer_paiement(
                     id_eleve=id_eleve,
                     montant=donnees["montant"],
@@ -287,6 +289,7 @@ class MainWindow(QMainWindow):
                     f"Numéro de reçu : {paiement_cree.numero_recu}\n"
                     f"Nouveau solde : {nouveau_solde.solde:,.0f} F CFA"
                 )
+
                 self._charger_eleves()
             except Exception as e:
                 QMessageBox.critical(
@@ -313,4 +316,11 @@ class MainWindow(QMainWindow):
         paiements = self.paiement_service.lister_paiements(id_eleve)
 
         dialogue = FicheEleveDialog(eleve, solde_info, paiements, parent=self)
+        dialogue.exec()
+
+    def _ouvrir_tableau_bord(self):
+        """Ouvre le tableau de bord."""
+        from src.ui.tableau_bord import TableauBordDialog
+
+        dialogue = TableauBordDialog(self.eleve_service, self.paiement_service, parent=self)
         dialogue.exec()
