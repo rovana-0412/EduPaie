@@ -146,7 +146,11 @@ class FicheEleveDialog(QDialog):
         layout.addLayout(layout_boutons)
 
     def _voir_recu(self):
-        """Affiche un message (sera remplacé par la génération PDF)."""
+        """Génère le PDF du reçu sélectionné et l'ouvre."""
+        from src.pdf_generator import GenerateurRecu
+        import subprocess
+        import sys
+
         ligne = self.tableau.currentRow()
         if ligne < 0:
             QMessageBox.warning(
@@ -155,9 +159,66 @@ class FicheEleveDialog(QDialog):
             )
             return
 
-        numero_recu = self.tableau.item(ligne, 4).text()
-        QMessageBox.information(
-            self, "Reçu sélectionné",
-            f"Numéro de reçu : {numero_recu}\n\n"
-            "La génération PDF sera implémentée dans la prochaine branche."
-        )
+        # Récupérer le paiement sélectionné
+        id_paiement = int(self.tableau.item(ligne, 0).text())
+        paiement = None
+        for p in self.paiements:
+            if p.id_paiement == id_paiement:
+                paiement = p
+                break
+
+        if not paiement:
+            QMessageBox.warning(self, "Erreur", "Paiement introuvable.")
+            return
+
+        try:
+            # Calculer le solde APRÈS ce paiement
+            # = montant total dû - somme de tous les paiements jusqu'à celui-ci
+            total_paye_avant_ce_paiement = sum(
+                p.montant for p in self.paiements
+                if p.date_paiement <= paiement.date_paiement
+                and p.id_paiement != paiement.id_paiement
+            )
+            total_paye_apres = total_paye_avant_ce_paiement + paiement.montant
+            solde_apres = self.solde_info.total_du - total_paye_apres
+
+            # Statut après ce paiement
+            if solde_apres <= 0:
+                statut_apres = "Soldé"
+            elif total_paye_apres > 0:
+                statut_apres = "Partiellement payé"
+            else:
+                statut_apres = "Non payé"
+
+            generateur = GenerateurRecu(nom_ecole="École EduPaie")
+            chemin = generateur.generer(
+                numero_recu=paiement.numero_recu,
+                nom_eleve=self.eleve.nom_complet,
+                classe=f"Classe {self.eleve.id_classe}",
+                annee_scolaire=self.eleve.annee_scolaire,
+                date_paiement=paiement.date_paiement,
+                montant_paye=paiement.montant,
+                mode_paiement=paiement.mode_paiement,
+                montant_total_du=self.solde_info.total_du,
+                total_paye=total_paye_apres,
+                solde_apres=solde_apres,
+                statut=statut_apres,
+            )
+
+            # Ouvrir le PDF (Windows)
+            if sys.platform == "win32":
+                subprocess.Popen(["start", "", str(chemin)], shell=True)
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", str(chemin)])
+            else:
+                subprocess.Popen(["xdg-open", str(chemin)])
+
+            QMessageBox.information(
+                self, "Reçu généré",
+                f"Le reçu a été généré et ouvert :\n{chemin}"
+            )
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Erreur",
+                f"Impossible de générer le reçu :\n{e}"
+            )
