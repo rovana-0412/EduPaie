@@ -91,6 +91,9 @@ class MainWindow(QMainWindow):
         bouton_supprimer = QPushButton("🗑 Supprimer")
         bouton_supprimer.clicked.connect(self._supprimer_eleve)
 
+        bouton_fiche = QPushButton("📋 Voir la fiche")
+        bouton_fiche.clicked.connect(self._voir_fiche)
+
         bouton_payer = QPushButton("💰 Enregistrer un paiement")
         bouton_payer.setStyleSheet(
             "background-color: #10b981; color: white; font-weight: bold; padding: 6px;"
@@ -103,6 +106,7 @@ class MainWindow(QMainWindow):
         layout_boutons.addWidget(bouton_ajouter)
         layout_boutons.addWidget(bouton_modifier)
         layout_boutons.addWidget(bouton_supprimer)
+        layout_boutons.addWidget(bouton_fiche)
         layout_boutons.addStretch()
         layout_boutons.addWidget(bouton_payer)
         layout_boutons.addWidget(bouton_actualiser)
@@ -289,3 +293,24 @@ class MainWindow(QMainWindow):
                     self, "Erreur",
                     f"Impossible d'enregistrer le paiement :\n{e}"
                 )
+
+    def _voir_fiche(self):
+        """Ouvre la fiche de l'élève sélectionné."""
+        from src.ui.fiche_eleve import FicheEleveDialog
+
+        ligne = self.tableau.currentRow()
+        if ligne < 0:
+            QMessageBox.warning(self, "Aucune sélection", "Veuillez sélectionner un élève.")
+            return
+
+        id_eleve = int(self.tableau.item(ligne, 0).text())
+        eleve = self.eleve_service.eleve_repo.trouver_par_id(id_eleve)
+        if not eleve:
+            QMessageBox.warning(self, "Erreur", "Élève introuvable.")
+            return
+
+        solde_info = self.paiement_service.calculer_solde(id_eleve)
+        paiements = self.paiement_service.lister_paiements(id_eleve)
+
+        dialogue = FicheEleveDialog(eleve, solde_info, paiements, parent=self)
+        dialogue.exec()
