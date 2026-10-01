@@ -70,10 +70,10 @@ class MainWindow(QMainWindow):
 
         # ===== Tableau des élèves =====
         self.tableau = QTableWidget()
-        self.tableau.setColumnCount(6)
+        self.tableau.setColumnCount(8)
         self.tableau.setHorizontalHeaderLabels([
             "ID", "Nom", "Prénom", "Date naissance",
-            "Classe", "Montant dû (F)"
+            "Classe", "Montant dû (F)", "Solde restant (F)", "Statut"
         ])
         self.tableau.setEditTriggers(QTableWidget.NoEditTriggers)
         self.tableau.setSelectionBehavior(QTableWidget.SelectRows)
@@ -110,7 +110,7 @@ class MainWindow(QMainWindow):
         layout_principal.addLayout(layout_boutons)
 
     def _charger_eleves(self):
-        """Charge la liste des élèves dans le tableau."""
+        """Charge la liste des élèves dans le tableau avec solde et statut."""
         terme = self.champ_recherche.text().strip()
         id_classe = self.filtre_classe.currentData()
 
@@ -127,12 +127,32 @@ class MainWindow(QMainWindow):
         # Remplir le tableau
         self.tableau.setRowCount(len(eleves))
         for i, eleve in enumerate(eleves):
+            # Calculer le solde
+            solde_info = self.paiement_service.calculer_solde(eleve.id_eleve)
+
             self.tableau.setItem(i, 0, QTableWidgetItem(str(eleve.id_eleve)))
             self.tableau.setItem(i, 1, QTableWidgetItem(eleve.nom))
             self.tableau.setItem(i, 2, QTableWidgetItem(eleve.prenom))
             self.tableau.setItem(i, 3, QTableWidgetItem(eleve.date_naissance))
             self.tableau.setItem(i, 4, QTableWidgetItem(str(eleve.id_classe)))
             self.tableau.setItem(i, 5, QTableWidgetItem(f"{eleve.montant_total_du:,.0f}"))
+            self.tableau.setItem(i, 6, QTableWidgetItem(f"{solde_info.solde:,.0f}"))
+
+            # Colonne Statut (avec couleur)
+            item_statut = QTableWidgetItem(solde_info.statut)
+            item_statut.setTextAlignment(Qt.AlignCenter)
+
+            if solde_info.statut == "Soldé":
+                item_statut.setBackground(Qt.green)
+                item_statut.setForeground(Qt.white)
+            elif solde_info.statut == "Partiellement payé":
+                item_statut.setBackground(Qt.yellow)
+                item_statut.setForeground(Qt.black)
+            else:  # Non payé
+                item_statut.setBackground(Qt.red)
+                item_statut.setForeground(Qt.white)
+
+            self.tableau.setItem(i, 7, item_statut)
 
         self.tableau.resizeColumnsToContents()
 
