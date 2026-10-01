@@ -130,10 +130,72 @@ class MainWindow(QMainWindow):
         self.tableau.resizeColumnsToContents()
 
     def _ajouter_eleve(self):
-        QMessageBox.information(self, "Info", "Fonctionnalité à venir (branche suivante).")
+        """Ouvre le formulaire d'ajout."""
+        from src.ui.eleve_form import EleveForm
+
+        classes = self.classe_repo.lister_toutes()
+        form = EleveForm(classes, eleve=None, parent=self)
+        if form.exec() == EleveForm.Accepted:
+            try:
+                eleve = form.get_eleve()
+                self.eleve_service.ajouter(eleve)
+                self._charger_eleves()
+                QMessageBox.information(self, "Succès", "Élève ajouté avec succès.")
+            except Exception as e:
+                QMessageBox.critical(self, "Erreur", f"Impossible d'ajouter l'élève :\n{e}")
 
     def _modifier_eleve(self):
-        QMessageBox.information(self, "Info", "Fonctionnalité à venir (branche suivante).")
+        """Ouvre le formulaire de modification pour l'élève sélectionné."""
+        from src.ui.eleve_form import EleveForm
+
+        ligne = self.tableau.currentRow()
+        if ligne < 0:
+            QMessageBox.warning(self, "Aucune sélection", "Veuillez sélectionner un élève.")
+            return
+
+        id_eleve = int(self.tableau.item(ligne, 0).text())
+        eleve = self.eleve_service.eleve_repo.trouver_par_id(id_eleve)
+        if not eleve:
+            QMessageBox.warning(self, "Erreur", "Élève introuvable.")
+            return
+
+        classes = self.classe_repo.lister_toutes()
+        form = EleveForm(classes, eleve=eleve, parent=self)
+        if form.exec() == EleveForm.Accepted:
+            try:
+                eleve_modifie = form.get_eleve()
+                self.eleve_service.modifier(eleve_modifie)
+                self._charger_eleves()
+                QMessageBox.information(self, "Succès", "Élève modifié avec succès.")
+            except Exception as e:
+                QMessageBox.critical(self, "Erreur", f"Impossible de modifier l'élève :\n{e}")
 
     def _supprimer_eleve(self):
-        QMessageBox.information(self, "Info", "Fonctionnalité à venir (branche suivante).")
+        """Supprime l'élève sélectionné après confirmation."""
+        ligne = self.tableau.currentRow()
+        if ligne < 0:
+            QMessageBox.warning(self, "Aucune sélection", "Veuillez sélectionner un élève.")
+            return
+
+        id_eleve = int(self.tableau.item(ligne, 0).text())
+        nom = self.tableau.item(ligne, 1).text()
+        prenom = self.tableau.item(ligne, 2).text()
+
+        reponse = QMessageBox.question(
+            self, "Confirmation",
+            f"Voulez-vous vraiment supprimer {nom} {prenom} ?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+
+        if reponse == QMessageBox.Yes:
+            try:
+                self.eleve_service.supprimer(id_eleve)
+                self._charger_eleves()
+                QMessageBox.information(self, "Succès", "Élève supprimé.")
+            except Exception as e:
+                QMessageBox.critical(
+                    self, "Erreur",
+                    f"Impossible de supprimer l'élève :\n{e}\n\n"
+                    "Vérifiez qu'il n'a pas de paiements associés."
+                )
