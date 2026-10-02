@@ -69,6 +69,10 @@ class MainWindow(QMainWindow):
         entete.addLayout(bloc_titre)
         entete.addStretch()
 
+        bouton_ajouter_classe = QPushButton("Ajouter une classe")
+        bouton_ajouter_classe.clicked.connect(self._ajouter_classe)
+        entete.addWidget(bouton_ajouter_classe)
+
         bouton_tableau_bord = QPushButton("Tableau de bord")
         bouton_tableau_bord.setObjectName("btn_primaire")
         bouton_tableau_bord.clicked.connect(self._ouvrir_tableau_bord)
@@ -145,7 +149,7 @@ class MainWindow(QMainWindow):
 
         bouton_actualiser = QPushButton("Actualiser")
         bouton_actualiser.clicked.connect(self._charger_eleves)
-
+        layout_boutons.addWidget(bouton_ajouter)
         layout_boutons.addWidget(bouton_ajouter)
         layout_boutons.addWidget(bouton_modifier)
         layout_boutons.addWidget(bouton_supprimer)
@@ -155,6 +159,52 @@ class MainWindow(QMainWindow):
         layout_boutons.addWidget(bouton_actualiser)
 
         layout_principal.addLayout(layout_boutons)
+
+    def _actualiser_classes(self, id_classe_selectionnee=None):
+        classes = self.classe_repo.lister_toutes()
+        self.classes = {
+            classe.id_classe: classe.nom_classe for classe in classes
+        }
+        self.filtre_classe.blockSignals(True)
+        self.filtre_classe.clear()
+        self.filtre_classe.addItem("Toutes les classes", None)
+        for classe in classes:
+            self.filtre_classe.addItem(
+                classe.nom_classe, classe.id_classe
+            )
+        if id_classe_selectionnee is not None:
+            index = self.filtre_classe.findData(id_classe_selectionnee)
+            if index >= 0:
+                self.filtre_classe.setCurrentIndex(index)
+        self.filtre_classe.blockSignals(False)
+
+    def _ajouter_classe(self):
+        from src.ui.classe_dialog import ClasseDialog
+
+        dialogue = ClasseDialog(self)
+        if dialogue.exec() != ClasseDialog.DialogCode.Accepted:
+            return
+
+        donnees = dialogue.get_donnees_classe()
+        try:
+            id_classe = self.classe_repo.ajouter(**donnees)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Classe déjà existante", str(exc))
+            return
+        except Exception as exc:
+            QMessageBox.critical(
+                self, "Erreur", f"Impossible d'ajouter la classe :\n{exc}"
+            )
+            return
+
+        self._actualiser_classes(id_classe)
+        self._charger_eleves()
+        QMessageBox.information(
+            self,
+            "Classe ajoutée",
+            f"La classe « {donnees['nom_classe']} » a été ajoutée.\n"
+            "Elle est maintenant disponible pour inscrire des élèves.",
+        )
 
     def _charger_eleves(self):
         """Charge la liste des élèves dans le tableau avec solde et statut."""
@@ -349,5 +399,10 @@ class MainWindow(QMainWindow):
         """Ouvre le tableau de bord."""
         from src.ui.tableau_bord import TableauBordDialog
 
-        dialogue = TableauBordDialog(self.eleve_service, self.paiement_service, parent=self)
+        dialogue = TableauBordDialog(
+            self.eleve_service,
+            self.paiement_service,
+            parent=self,
+            classe_repo=self.classe_repo,
+        )
         dialogue.exec()
