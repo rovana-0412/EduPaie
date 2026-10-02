@@ -3,9 +3,10 @@ EduPaie — Point d'entrée de l'application.
 Lance la fenêtre principale après avoir initialisé la base de données.
 """
 import sys
+import sqlite3
 from pathlib import Path
 
-from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtWidgets import QApplication, QDialog, QMessageBox
 
 # Chemins
 RACINE = Path(__file__).parent
@@ -24,41 +25,61 @@ from src.repository import (
     EleveRepository,
     PaiementRepository,
 )
+from src.auth import AuthService
+from src.backup import BackupError, BackupService
 from src.service import EleveService, PaiementService
+from src.ui.login_dialog import LoginDialog
 from src.ui.main_window import MainWindow
 
 
 def main():
     """Point d'entrée principal."""
-    # 1. Créer l'application Qt
     app = QApplication(sys.argv)
     app.setApplicationName("EduPaie")
     app.setOrganizationName("EduPaie")
 
-    # 2. Connecter à la base de données
+    # Appliquer le style global
+    from src.ui.style import STYLE_GLOBAL
+    app.setStyleSheet(STYLE_GLOBAL)
     db = Database(DB_PATH)
     db.connecter()
+    try:
+        auth_service = AuthService(db)
+        auth_service.initialiser()
+        backup_service = BackupService(db)
+        backup_service.initialiser()
+        dialogue_connexion = LoginDialog(auth_service, backup_service)
+        if dialogue_connexion.exec() != QDialog.DialogCode.Accepted:
+            return
 
-    # 3. Créer les repositories
-    classe_repo = ClasseRepository(db)
-    eleve_repo = EleveRepository(db)
-    paiement_repo = PaiementRepository(db)
+        try:
+            chemin_sauvegarde = backup_service.creer_sauvegarde_chiffree(
+                DB_PATH, dialogue_connexion.mot_de_passe_sauvegarde
+            )
+        except (BackupError, OSError, sqlite3.Error) as exc:
+            QMessageBox.critical(
+                None,
+                "Sauvegarde impossible",
+                "Aucune sauvegarde chiffrée n'a pu être créée. "
+                "L'application ne sera pas ouverte.\n\n"
+                f"Détail : {exc}",
+            )
+            return 1
 
-    # 4. Créer les services
-    eleve_service = EleveService(eleve_repo)
-    paiement_service = PaiementService(eleve_repo, paiement_repo)
+        classe_repo = ClasseRepository(db)
+        eleve_repo = EleveRepository(db)
+        paiement_repo = PaiementRepository(db)
 
-    # 5. Créer et afficher la fenêtre principale
-    window = MainWindow(classe_repo, eleve_service, paiement_service)
-    window.show()
+        eleve_service = EleveService(eleve_repo)
+        paiement_service = PaiementService(eleve_repo, paiement_repo)
 
-    # 6. Lancer la boucle d'événements
-    code_retour = app.exec()
-
-    # 7. Fermer proprement la connexion
-    db.deconnecter()
-    sys.exit(code_retour)
+        window = MainWindow(classe_repo, eleve_service, paiement_service)
+        window.show()
+        print(f"Sauvegarde chiffrée créée : {chemin_sauvegarde}")
+        return app.exec()
+    finally:
+        db.deconnecter()
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main() or 0)
