@@ -9,12 +9,19 @@ from pathlib import Path
 from PySide6.QtWidgets import QApplication, QDialog, QMessageBox
 
 # Chemins
-RACINE = Path(__file__).parent
+# Chemins (compatible .exe PyInstaller)
+if getattr(sys, 'frozen', False):
+    # En mode .exe : le dossier du .exe
+    RACINE = Path(sys.executable).parent
+else:
+    # En mode développement : le dossier du script
+    RACINE = Path(__file__).parent
+
 DB_PATH = RACINE / "data" / "edupaie.db"
 
 # Vérification de la base
 if not DB_PATH.exists():
-    print(f"❌ Base de données introuvable : {DB_PATH}")
+    print(f"[ERREUR] Base de données introuvable : {DB_PATH}")
     print("   Lancez d'abord : python init_db.py && python seed_db.py")
     sys.exit(1)
 

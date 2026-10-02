@@ -15,6 +15,7 @@ data/
 build/
 dist/
 *.spec
+!EduPaie.spec
 
 # IDE
 .vscode/

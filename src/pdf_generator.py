@@ -1,6 +1,7 @@
 """
 EduPaie — Génération des reçus PDF au format reçu scolaire.
 """
+import sys
 from datetime import date
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -18,8 +19,12 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+# Chemin compatible .exe PyInstaller
+if getattr(sys, 'frozen', False):
+    RACINE = Path(sys.executable).parent
+else:
+    RACINE = Path(__file__).parent.parent
 
-RACINE = Path(__file__).parent.parent
 RECUS_DIR = RACINE / "data" / "recus"
 RECUS_DIR.mkdir(parents=True, exist_ok=True)
 
