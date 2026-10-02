@@ -24,3 +24,9 @@ dist/
 Thumbs.db
 # Reçus PDF générés
 data/recus/
+
+# Captures d'écran (documentation)
+captures/
+
+# Fichiers temporaires de test
+test_pdf.py
