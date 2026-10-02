@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
+from src.date_utils import valider_date_iso
 from src.models import Eleve
 
 
@@ -40,7 +41,7 @@ class EleveForm(QDialog):
         else:
             self.setWindowTitle(f"Modifier : {eleve.nom_complet}")
 
-        self.setMinimumWidth(450)
+        self.setMinimumWidth(500)
 
         # Construire l'interface
         self._construire_interface()
@@ -52,15 +53,23 @@ class EleveForm(QDialog):
     def _construire_interface(self):
         """Construit les champs du formulaire."""
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(26, 24, 26, 22)
+        layout.setSpacing(16)
 
         # ===== Titre =====
-        titre = QLabel("Informations de l'élève")
-        titre.setStyleSheet("font-size: 16px; font-weight: bold; padding: 8px;")
+        titre = QLabel(
+            "Ajouter un élève" if self.eleve is None else "Modifier les informations"
+        )
+        titre.setObjectName("titre_principal")
         layout.addWidget(titre)
+        description = QLabel("Renseignez les informations scolaires et personnelles.")
+        description.setObjectName("sous_titre")
+        layout.addWidget(description)
 
         # ===== Formulaire =====
         form = QFormLayout()
-        form.setSpacing(10)
+        form.setVerticalSpacing(12)
+        form.setHorizontalSpacing(16)
 
         # Nom
         self.champ_nom = QLineEdit()
@@ -111,6 +120,7 @@ class EleveForm(QDialog):
         bouton_annuler.clicked.connect(self.reject)
 
         bouton_valider = QPushButton("Valider")
+        bouton_valider.setObjectName("btn_primaire")
         bouton_valider.setDefault(True)
         bouton_valider.clicked.connect(self._valider)
 
@@ -156,16 +166,13 @@ class EleveForm(QDialog):
             QMessageBox.warning(self, "Champ manquant", "La date de naissance est obligatoire.")
             self.champ_date.setFocus()
             return
-        # Vérifier le format de la date (simple)
         try:
-            parties = date_naissance.split("-")
-            if len(parties) != 3 or len(parties[0]) != 4:
-                raise ValueError
-            int(parties[0]); int(parties[1]); int(parties[2])
-        except (ValueError, IndexError):
+            valider_date_iso(date_naissance, "La date de naissance")
+        except ValueError:
             QMessageBox.warning(
                 self, "Format invalide",
-                "La date doit être au format AAAA-MM-JJ (ex : 2014-03-15)."
+                "Saisissez une date réelle au format AAAA-MM-JJ "
+                "(ex. : 2014-03-15)."
             )
             self.champ_date.setFocus()
             return

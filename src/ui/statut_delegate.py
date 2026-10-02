@@ -1,46 +1,38 @@
-"""
-EduPaie — Délégué pour afficher les statuts avec fond coloré.
-Contourne le QSS qui écrase les couleurs de fond.
-"""
-from PySide6.QtWidgets import QStyledItemDelegate, QStyle
-from PySide6.QtGui import QColor, QPainter, QBrush
+"""Délégué d'affichage des statuts sous forme de badges."""
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QPainter, QPen
+from PySide6.QtWidgets import QStyledItemDelegate
 
 
 class StatutDelegate(QStyledItemDelegate):
-    """Délégué qui peint les cellules de statut avec un fond coloré."""
+    """Affiche les statuts dans des badges lisibles et discrets."""
 
     COULEURS_STATUT = {
-        "Soldé":               QColor("#10b981"),  # vert
-        "Partiellement payé":  QColor("#f59e0b"),  # orange
-        "Non payé":            QColor("#ef4444"),  # rouge
+        "Soldé": (QColor("#dcfce7"), QColor("#166534")),
+        "Partiellement payé": (QColor("#ffedd5"), QColor("#9a3412")),
+        "Non payé": (QColor("#fee2e2"), QColor("#991b1b")),
     }
 
     def paint(self, painter: QPainter, option, index):
-        """Peint la cellule."""
-        statut = index.data(Qt.DisplayRole)
-
-        if statut in self.COULEURS_STATUT:
-            # Sauvegarder l'état
-            painter.save()
-
-            # Dessiner le fond coloré
-            painter.fillRect(option.rect, QBrush(self.COULEURS_STATUT[statut]))
-
-            # Dessiner le texte en blanc, centré, en gras
-            painter.setPen(QColor("white"))
-            font = painter.font()
-            font.setBold(True)
-            painter.setFont(font)
-
-            painter.drawText(
-                option.rect,
-                Qt.AlignCenter,
-                statut
-            )
-
-            # Restaurer l'état
-            painter.restore()
-        else:
-            # Comportement par défaut
+        """Peint une pastille de statut centrée dans la cellule."""
+        statut = index.data(Qt.ItemDataRole.DisplayRole)
+        if statut not in self.COULEURS_STATUT:
             super().paint(painter, option, index)
+            return
+
+        painter.save()
+        fond, couleur_texte = self.COULEURS_STATUT[statut]
+        largeur_badge = min(option.rect.width() - 16, 148)
+        badge = option.rect
+        badge.setWidth(largeur_badge)
+        badge.moveCenter(option.rect.center())
+        badge.adjust(0, 7, 0, -7)
+        painter.setPen(QPen(Qt.PenStyle.NoPen))
+        painter.setBrush(fond)
+        painter.drawRoundedRect(badge, 8, 8)
+        painter.setPen(couleur_texte)
+        font = painter.font()
+        font.setWeight(font.Weight.DemiBold)
+        painter.setFont(font)
+        painter.drawText(option.rect, Qt.AlignmentFlag.AlignCenter, statut)
+        painter.restore()

@@ -14,9 +14,10 @@ from PySide6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QMessageBox,
+    QFrame,
+    QHeaderView,
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QBrush
 
 from src.ui.statut_delegate import StatutDelegate
 
@@ -31,10 +32,15 @@ class MainWindow(QMainWindow):
         self.classe_repo = classe_repo
         self.eleve_service = eleve_service
         self.paiement_service = paiement_service
+        self.classes = {
+            classe.id_classe: classe.nom_classe
+            for classe in self.classe_repo.lister_toutes()
+        }
 
         # Configuration de la fenêtre
         self.setWindowTitle("EduPaie — Gestion des paiements scolaires")
-        self.resize(1100, 650)
+        self.resize(1200, 760)
+        self.setMinimumSize(940, 620)
 
         # Construire l'interface
         self._construire_interface()
@@ -48,17 +54,36 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         layout_principal = QVBoxLayout(central)
+        layout_principal.setContentsMargins(28, 24, 28, 22)
+        layout_principal.setSpacing(16)
 
-        # ===== Titre =====
-        titre = QLabel("Liste des élèves")
-        titre.setStyleSheet("font-size: 18px; font-weight: bold; padding: 8px;")
-        layout_principal.addWidget(titre)
+        # ===== En-tête =====
+        entete = QHBoxLayout()
+        bloc_titre = QVBoxLayout()
+        titre = QLabel("Suivi des élèves")
+        titre.setObjectName("titre_principal")
+        sous_titre = QLabel("Gérez les inscriptions et suivez les paiements de scolarité.")
+        sous_titre.setObjectName("sous_titre")
+        bloc_titre.addWidget(titre)
+        bloc_titre.addWidget(sous_titre)
+        entete.addLayout(bloc_titre)
+        entete.addStretch()
+
+        bouton_tableau_bord = QPushButton("Tableau de bord")
+        bouton_tableau_bord.setObjectName("btn_primaire")
+        bouton_tableau_bord.clicked.connect(self._ouvrir_tableau_bord)
+        entete.addWidget(bouton_tableau_bord)
+        layout_principal.addLayout(entete)
 
         # ===== Barre de recherche + filtre =====
-        layout_recherche = QHBoxLayout()
+        cadre_recherche = QFrame()
+        cadre_recherche.setObjectName("surface")
+        layout_recherche = QHBoxLayout(cadre_recherche)
+        layout_recherche.setContentsMargins(14, 12, 14, 12)
+        layout_recherche.setSpacing(12)
 
         self.champ_recherche = QLineEdit()
-        self.champ_recherche.setPlaceholderText("Rechercher un élève (nom ou prénom)...")
+        self.champ_recherche.setPlaceholderText("Rechercher par nom ou prénom")
         self.champ_recherche.textChanged.connect(self._charger_eleves)
 
         self.filtre_classe = QComboBox()
@@ -69,55 +94,62 @@ class MainWindow(QMainWindow):
 
         layout_recherche.addWidget(self.champ_recherche, 3)
         layout_recherche.addWidget(self.filtre_classe, 1)
-        layout_principal.addLayout(layout_recherche)
+        layout_principal.addWidget(cadre_recherche)
+
+        self.label_resume = QLabel("Liste des élèves")
+        self.label_resume.setObjectName("titre_section")
+        layout_principal.addWidget(self.label_resume)
 
         # ===== Tableau des élèves =====
         self.tableau = QTableWidget()
         self.tableau.setColumnCount(8)
         self.tableau.setHorizontalHeaderLabels([
-            "ID", "Nom", "Prénom", "Date naissance",
-            "Classe", "Montant dû (F)", "Solde restant (F)", "Statut"
+            "ID", "Nom", "Prénom", "Date de naissance",
+            "Classe", "Montant dû", "Solde restant", "Statut"
         ])
         self.tableau.setEditTriggers(QTableWidget.NoEditTriggers)
-
+        self.tableau.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.tableau.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
+        self.tableau.setAlternatingRowColors(True)
+        self.tableau.verticalHeader().setVisible(False)
+        self.tableau.verticalHeader().setDefaultSectionSize(42)
+        entete_tableau = self.tableau.horizontalHeader()
+        entete_tableau.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        entete_tableau.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        entete_tableau.setSectionResizeMode(7, QHeaderView.ResizeMode.ResizeToContents)
+        self.tableau.setColumnHidden(0, True)
         self.tableau.setItemDelegateForColumn(7, StatutDelegate(self.tableau))
         layout_principal.addWidget(self.tableau)
 
         # ===== Boutons d'action =====
         layout_boutons = QHBoxLayout()
+        layout_boutons.setSpacing(8)
 
-        bouton_ajouter = QPushButton("➕ Ajouter un élève")
+        bouton_ajouter = QPushButton("Ajouter un élève")
+        bouton_ajouter.setObjectName("btn_primaire")
         bouton_ajouter.clicked.connect(self._ajouter_eleve)
 
-        bouton_modifier = QPushButton("✏ Modifier")
+        bouton_modifier = QPushButton("Modifier")
         bouton_modifier.clicked.connect(self._modifier_eleve)
 
-        bouton_supprimer = QPushButton("🗑 Supprimer")
+        bouton_supprimer = QPushButton("Supprimer")
+        bouton_supprimer.setObjectName("btn_danger")
         bouton_supprimer.clicked.connect(self._supprimer_eleve)
 
-        bouton_fiche = QPushButton("📋 Voir la fiche")
+        bouton_fiche = QPushButton("Fiche élève")
         bouton_fiche.clicked.connect(self._voir_fiche)
 
-        bouton_tableau_bord = QPushButton("📊 Tableau de bord")
-        bouton_tableau_bord.setStyleSheet(
-            "background-color: #3b82f6; color: white; font-weight: bold; padding: 6px;"
-        )
-        bouton_tableau_bord.clicked.connect(self._ouvrir_tableau_bord)
-
-        bouton_payer = QPushButton("💰 Enregistrer un paiement")
-        bouton_payer.setStyleSheet(
-            "background-color: #10b981; color: white; font-weight: bold; padding: 6px;"
-        )
+        bouton_payer = QPushButton("Enregistrer un paiement")
+        bouton_payer.setObjectName("btn_succes")
         bouton_payer.clicked.connect(self._enregistrer_paiement)
 
-        bouton_actualiser = QPushButton("🔄 Actualiser")
+        bouton_actualiser = QPushButton("Actualiser")
         bouton_actualiser.clicked.connect(self._charger_eleves)
 
         layout_boutons.addWidget(bouton_ajouter)
         layout_boutons.addWidget(bouton_modifier)
         layout_boutons.addWidget(bouton_supprimer)
         layout_boutons.addWidget(bouton_fiche)
-        layout_boutons.addWidget(bouton_tableau_bord)
         layout_boutons.addStretch()
         layout_boutons.addWidget(bouton_payer)
         layout_boutons.addWidget(bouton_actualiser)
@@ -148,27 +180,22 @@ class MainWindow(QMainWindow):
             self.tableau.setItem(i, 1, QTableWidgetItem(eleve.nom))
             self.tableau.setItem(i, 2, QTableWidgetItem(eleve.prenom))
             self.tableau.setItem(i, 3, QTableWidgetItem(eleve.date_naissance))
-            self.tableau.setItem(i, 4, QTableWidgetItem(str(eleve.id_classe)))
-            self.tableau.setItem(i, 5, QTableWidgetItem(f"{eleve.montant_total_du:,.0f}"))
-            self.tableau.setItem(i, 6, QTableWidgetItem(f"{solde_info.solde:,.0f}"))
+            self.tableau.setItem(
+                i, 4, QTableWidgetItem(self.classes.get(eleve.id_classe, str(eleve.id_classe)))
+            )
+            self.tableau.setItem(i, 5, QTableWidgetItem(f"{eleve.montant_total_du:,.0f} F"))
+            self.tableau.setItem(i, 6, QTableWidgetItem(f"{solde_info.solde:,.0f} F"))
 
             # Colonne Statut (avec couleur)
             item_statut = QTableWidgetItem(solde_info.statut)
-            item_statut.setTextAlignment(Qt.AlignCenter)
-
-            if solde_info.statut == "Soldé":
-                item_statut.setBackground(QBrush(QColor("#10b981")))
-                item_statut.setForeground(QBrush(QColor("white")))
-            elif solde_info.statut == "Partiellement payé":
-                item_statut.setBackground(QBrush(QColor("#f59e0b")))
-                item_statut.setForeground(QBrush(QColor("white")))
-            else:
-                item_statut.setBackground(QBrush(QColor("#ef4444")))
-                item_statut.setForeground(QBrush(QColor("white")))
-
+            item_statut.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.tableau.setItem(i, 7, item_statut)
 
-        self.tableau.resizeColumnsToContents()
+        self.tableau.resizeColumnToContents(3)
+        self.tableau.resizeColumnToContents(4)
+        self.tableau.resizeColumnToContents(5)
+        self.tableau.resizeColumnToContents(6)
+        self.label_resume.setText(f"Élèves inscrits  ·  {len(eleves)} résultat(s)")
 
     def _ajouter_eleve(self):
         """Ouvre le formulaire d'ajout."""

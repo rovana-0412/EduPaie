@@ -1,5 +1,6 @@
 altgraph==0.17.5
 charset-normalizer==3.5.2
+cryptography>=44,<47
 packaging==26.3
 pefile==2024.8.26
 pillow==12.3.0

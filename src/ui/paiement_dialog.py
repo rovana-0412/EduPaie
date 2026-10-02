@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QFrame,
 )
 
+from src.date_utils import valider_date_iso
 from src.models import Eleve, Paiement
 
 
@@ -36,30 +37,32 @@ class PaiementDialog(QDialog):
         self.solde_actuel = solde_actuel
 
         self.setWindowTitle(f"Enregistrer un paiement — {eleve.nom_complet}")
-        self.setMinimumWidth(480)
+        self.setMinimumWidth(500)
 
         self._construire_interface()
 
     def _construire_interface(self):
         """Construit les champs du dialogue."""
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(26, 24, 26, 22)
+        layout.setSpacing(16)
 
         # ===== En-tête : infos élève =====
         titre = QLabel(f"Paiement pour : {self.eleve.nom_complet}")
-        titre.setStyleSheet("font-size: 16px; font-weight: bold; padding: 8px;")
+        titre.setObjectName("titre_principal")
         layout.addWidget(titre)
 
         # Infos solde
         cadre_solde = QFrame()
+        cadre_solde.setObjectName("surface")
         cadre_solde.setFrameShape(QFrame.StyledPanel)
-        cadre_solde.setStyleSheet(
-            "background-color: #f0f4ff; padding: 10px; border-radius: 5px;"
-        )
         layout_solde = QVBoxLayout(cadre_solde)
+        layout_solde.setContentsMargins(16, 12, 16, 12)
+        layout_solde.setSpacing(6)
 
         label_du = QLabel(f"Montant total dû : {self.eleve.montant_total_du:,.0f} F CFA")
         label_solde = QLabel(f"Solde restant : {self.solde_actuel:,.0f} F CFA")
-        label_solde.setStyleSheet("font-weight: bold; color: #1e40af;")
+        label_solde.setObjectName("titre_section")
 
         layout_solde.addWidget(label_du)
         layout_solde.addWidget(label_solde)
@@ -67,7 +70,8 @@ class PaiementDialog(QDialog):
 
         # ===== Formulaire =====
         form = QFormLayout()
-        form.setSpacing(10)
+        form.setVerticalSpacing(12)
+        form.setHorizontalSpacing(16)
 
         # Montant
         self.champ_montant = QDoubleSpinBox()
@@ -81,6 +85,7 @@ class PaiementDialog(QDialog):
         # Date
         self.champ_date = QLineEdit()
         self.champ_date.setText(date.today().isoformat())
+        self.champ_date.setReadOnly(True)
         form.addRow("Date du paiement * :", self.champ_date)
 
         # Mode
@@ -96,7 +101,8 @@ class PaiementDialog(QDialog):
         bouton_annuler = QPushButton("Annuler")
         bouton_annuler.clicked.connect(self.reject)
 
-        bouton_valider = QPushButton("💰 Enregistrer le paiement")
+        bouton_valider = QPushButton("Enregistrer le paiement")
+        bouton_valider.setObjectName("btn_succes")
         bouton_valider.setDefault(True)
         bouton_valider.clicked.connect(self._valider)
 
@@ -109,7 +115,6 @@ class PaiementDialog(QDialog):
     def _valider(self):
         """Valide les champs avant de fermer."""
         montant = self.champ_montant.value()
-        date_paiement = self.champ_date.text().strip()
 
         # Validations
         if montant <= 0:
@@ -129,25 +134,16 @@ class PaiementDialog(QDialog):
             self.champ_montant.setFocus()
             return
 
-        if not date_paiement:
-            QMessageBox.warning(self, "Champ manquant", "La date est obligatoire.")
-            self.champ_date.setFocus()
-            return
-
-        # Vérifier le format de la date
+        self.champ_date.setText(date.today().isoformat())
         try:
-            parties = date_paiement.split("-")
-            if len(parties) != 3 or len(parties[0]) != 4:
-                raise ValueError
-            int(parties[0]); int(parties[1]); int(parties[2])
-        except (ValueError, IndexError):
+            valider_date_iso(self.champ_date.text(), "La date du paiement")
+        except ValueError:
             QMessageBox.warning(
-                self, "Format invalide",
-                "La date doit être au format AAAA-MM-JJ (ex : 2026-10-01)."
+                self,
+                "Date invalide",
+                "La date du jour ne peut pas être validée.",
             )
-            self.champ_date.setFocus()
             return
-
         self.accept()
 
     def get_donnees_paiement(self) -> dict:

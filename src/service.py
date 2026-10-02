@@ -6,6 +6,7 @@ génération du numéro de reçu.
 from datetime import date
 from typing import List
 
+from src.date_utils import valider_date_iso
 from src.models import Eleve, Paiement, SoldeEleve
 from src.repository import (
     ClasseRepository,
@@ -45,6 +46,7 @@ class EleveService:
             raise ValueError("Le prénom est obligatoire.")
         if not eleve.date_naissance:
             raise ValueError("La date de naissance est obligatoire.")
+        valider_date_iso(eleve.date_naissance, "La date de naissance")
         if eleve.montant_total_du <= 0:
             raise ValueError("Le montant total dû doit être supérieur à 0.")
         if not eleve.id_classe:
@@ -103,23 +105,22 @@ class PaiementService:
         if mode_paiement not in modes_valides:
             raise ValueError(f"Mode de paiement invalide : {mode_paiement}")
 
-        # Générer le numéro de reçu
         if date_paiement is None:
             date_paiement = date.today().isoformat()
-
-        annee = int(date_paiement[:4])
-        numero_recu = self._generer_numero_recu(annee)
+        date_validee = valider_date_iso(date_paiement, "La date du paiement")
 
         # Enregistrer
         paiement = Paiement(
             id_paiement=None,
-            date_paiement=date_paiement,
+            date_paiement=date_validee.isoformat(),
             montant=montant,
             mode_paiement=mode_paiement,
-            numero_recu=numero_recu,
+            numero_recu="",
             id_eleve=id_eleve,
         )
-        id_paiement = self.paiement_repo.ajouter(paiement)
+        id_paiement, paiement.numero_recu = (
+            self.paiement_repo.ajouter_avec_numero_recu(paiement, date_validee.year)
+        )
         paiement.id_paiement = id_paiement
         return paiement
 
@@ -129,6 +130,4 @@ class PaiementService:
 
     def _generer_numero_recu(self, annee: int) -> str:
         """Génère un numéro de reçu unique au format REC-AAAA-NNNNNN."""
-        compteur = self.paiement_repo.compter_recus_annee(annee)
-        nouveau = compteur + 1
-        return f"REC-{annee}-{nouveau:06d}"
+        return self.paiement_repo.prochain_numero_recu(annee)

@@ -1,155 +1,236 @@
-"""
-EduPaie — Feuille de style globale (QSS).
-Palette cohérente et moderne pour toute l'application.
-"""
+"""Palette et style global de l'interface EduPaie."""
 
-# Palette de couleurs
 COULEURS = {
-    "primaire":      "#2563eb",  # bleu
-    "primaire_dark": "#1e40af",
-    "succes":        "#10b981",  # vert
-    "succes_dark":   "#059669",
-    "attention":     "#f59e0b",  # orange
-    "danger":        "#ef4444",  # rouge
-    "gris_fonce":    "#1f2937",
-    "gris":          "#6b7280",
-    "gris_clair":    "#e5e7eb",
-    "gris_tres_clair":"#f9fafb",
-    "blanc":         "#ffffff",
+    "primaire": "#2563eb",
+    "primaire_dark": "#1d4ed8",
+    "succes": "#15803d",
+    "attention": "#b45309",
+    "danger": "#b91c1c",
+    "gris_fonce": "#172033",
+    "gris": "#64748b",
+    "gris_clair": "#dbe3ee",
+    "gris_tres_clair": "#f3f6fb",
+    "blanc": "#ffffff",
 }
 
-# Feuille de style globale
 STYLE_GLOBAL = f"""
 QWidget {{
-    font-family: "Segoe UI", "Arial", sans-serif;
+    font-family: Arial;
     font-size: 13px;
-    color: {COULEURS['gris_fonce']};
-    background-color: {COULEURS['blanc']};
+    color: {COULEURS["gris_fonce"]};
+    background-color: transparent;
 }}
 
 QMainWindow, QDialog {{
-    background-color: {COULEURS['gris_tres_clair']};
+    background-color: {COULEURS["gris_tres_clair"]};
 }}
 
-/* ===== Titres ===== */
 QLabel#titre_principal {{
-    font-size: 22px;
-    font-weight: bold;
-    color: {COULEURS['primaire_dark']};
-    padding: 12px;
+    font-size: 24px;
+    font-weight: 700;
+    color: {COULEURS["gris_fonce"]};
+}}
+
+QLabel#sous_titre {{
+    color: {COULEURS["gris"]};
+    font-size: 13px;
 }}
 
 QLabel#titre_section {{
     font-size: 15px;
-    font-weight: bold;
-    color: {COULEURS['gris_fonce']};
-    padding: 6px 0;
+    font-weight: 650;
+    color: {COULEURS["gris_fonce"]};
 }}
 
-/* ===== Champs de saisie ===== */
+QLabel#carte_titre {{
+    color: {COULEURS["gris"]};
+    font-size: 12px;
+    font-weight: 600;
+}}
+
+QLabel#carte_valeur {{
+    font-size: 25px;
+    font-weight: 700;
+    color: {COULEURS["gris_fonce"]};
+}}
+
+QLabel#statut_succes, QLabel#statut_attention, QLabel#statut_danger {{
+    padding: 7px 12px;
+    border-radius: 7px;
+    font-weight: 700;
+}}
+
+QLabel#statut_succes {{
+    color: #166534;
+    background-color: #dcfce7;
+}}
+
+QLabel#statut_attention {{
+    color: #9a3412;
+    background-color: #ffedd5;
+}}
+
+QLabel#statut_danger {{
+    color: #991b1b;
+    background-color: #fee2e2;
+}}
+
+QLabel#message_erreur {{
+    color: {COULEURS["danger"]};
+    font-weight: 600;
+}}
+
+QFrame#surface, QFrame#carte_stat {{
+    background-color: {COULEURS["blanc"]};
+    border: 1px solid {COULEURS["gris_clair"]};
+    border-radius: 10px;
+}}
+
+QFrame#carte_stat {{
+    border-top: 3px solid {COULEURS["primaire"]};
+}}
+
 QLineEdit, QComboBox, QDoubleSpinBox, QDateEdit {{
-    padding: 8px 12px;
-    border: 1px solid {COULEURS['gris_clair']};
-    border-radius: 6px;
-    background-color: {COULEURS['blanc']};
     min-height: 20px;
+    padding: 8px 11px;
+    color: {COULEURS["gris_fonce"]};
+    background-color: {COULEURS["blanc"]};
+    border: 1px solid {COULEURS["gris_clair"]};
+    border-radius: 6px;
+    selection-background-color: {COULEURS["primaire"]};
+}}
+
+QLineEdit:hover, QComboBox:hover, QDoubleSpinBox:hover, QDateEdit:hover {{
+    border-color: #aab8ca;
 }}
 
 QLineEdit:focus, QComboBox:focus, QDoubleSpinBox:focus, QDateEdit:focus {{
-    border: 2px solid {COULEURS['primaire']};
+    border: 1px solid {COULEURS["primaire"]};
+}}
+
+QLineEdit:read-only {{
+    color: {COULEURS["gris"]};
+    background-color: #f8fafc;
 }}
 
 QComboBox::drop-down {{
+    width: 26px;
     border: none;
-    width: 24px;
 }}
 
-/* ===== Boutons ===== */
 QPushButton {{
-    padding: 8px 16px;
-    border: 1px solid {COULEURS['gris_clair']};
-    border-radius: 6px;
-    background-color: {COULEURS['blanc']};
-    color: {COULEURS['gris_fonce']};
-    font-weight: 500;
     min-height: 20px;
+    padding: 8px 14px;
+    color: {COULEURS["gris_fonce"]};
+    background-color: {COULEURS["blanc"]};
+    border: 1px solid {COULEURS["gris_clair"]};
+    border-radius: 6px;
+    font-weight: 600;
 }}
 
 QPushButton:hover {{
-    background-color: {COULEURS['gris_tres_clair']};
-    border-color: {COULEURS['gris']};
+    background-color: #f8fafc;
+    border-color: #aab8ca;
 }}
 
 QPushButton:pressed {{
-    background-color: {COULEURS['gris_clair']};
+    background-color: #e8eef6;
 }}
 
-/* Bouton primaire (bleu) */
+QPushButton:disabled {{
+    color: #94a3b8;
+    background-color: #edf1f6;
+    border-color: #e2e8f0;
+}}
+
 QPushButton#btn_primaire {{
-    background-color: {COULEURS['primaire']};
     color: white;
-    border: none;
-    font-weight: bold;
+    background-color: {COULEURS["primaire"]};
+    border: 1px solid {COULEURS["primaire"]};
 }}
 
 QPushButton#btn_primaire:hover {{
-    background-color: {COULEURS['primaire_dark']};
+    background-color: {COULEURS["primaire_dark"]};
+    border-color: {COULEURS["primaire_dark"]};
 }}
 
-/* Bouton succès (vert) */
 QPushButton#btn_succes {{
-    background-color: {COULEURS['succes']};
     color: white;
-    border: none;
-    font-weight: bold;
+    background-color: {COULEURS["succes"]};
+    border: 1px solid {COULEURS["succes"]};
 }}
 
 QPushButton#btn_succes:hover {{
-    background-color: {COULEURS['succes_dark']};
+    background-color: #166534;
 }}
 
-/* ===== Tableaux ===== */
+QPushButton#btn_danger {{
+    color: {COULEURS["danger"]};
+    background-color: #fffafa;
+    border-color: #fecaca;
+}}
+
+QPushButton#btn_danger:hover {{
+    background-color: #fef2f2;
+}}
+
 QTableWidget {{
-    background-color: {COULEURS['blanc']};
-    border: 1px solid {COULEURS['gris_clair']};
-    border-radius: 6px;
-    gridline-color: {COULEURS['gris_clair']};
-    alternate-background-color: {COULEURS['gris_tres_clair']};
+    color: {COULEURS["gris_fonce"]};
+    background-color: {COULEURS["blanc"]};
+    alternate-background-color: #f8fafc;
+    border: 1px solid {COULEURS["gris_clair"]};
+    border-radius: 8px;
+    gridline-color: #edf1f6;
+    selection-background-color: #eaf1ff;
+    selection-color: {COULEURS["gris_fonce"]};
+    outline: none;
 }}
 
 QTableWidget::item {{
-    padding: 8px;
+    padding: 7px 9px;
     border: none;
 }}
-
-/* Pas de règle pour item:selected → les couleurs personnalisées sont préservées */
 
 QHeaderView::section {{
-    background-color: {COULEURS['gris_fonce']};
-    color: white;
-    padding: 10px;
+    min-height: 22px;
+    padding: 9px 8px;
+    color: #475569;
+    background-color: #f8fafc;
     border: none;
-    font-weight: bold;
-    font-size: 12px;
+    border-bottom: 1px solid {COULEURS["gris_clair"]};
+    font-size: 11px;
+    font-weight: 700;
 }}
 
-/* ===== Cartes de statistiques ===== */
-QFrame#carte_stat {{
-    background-color: {COULEURS['blanc']};
-    border-radius: 10px;
-    border-left: 5px solid {COULEURS['primaire']};
-    padding: 4px;
+QTableCornerButton::section {{
+    background-color: #f8fafc;
+    border: none;
+    border-bottom: 1px solid {COULEURS["gris_clair"]};
 }}
 
-QFrame#carte_stat QLabel#titre_stat {{
-    font-size: 12px;
-    color: {COULEURS['gris']};
-    font-weight: normal;
+QScrollBar:vertical {{
+    width: 10px;
+    margin: 2px;
+    background: transparent;
 }}
 
-QFrame#carte_stat QLabel#valeur_stat {{
-    font-size: 26px;
-    font-weight: bold;
-    color: {COULEURS['gris_fonce']};
+QScrollBar::handle:vertical {{
+    min-height: 24px;
+    background: #cbd5e1;
+    border-radius: 5px;
+}}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+    background: transparent;
+    border: none;
+}}
+
+QToolTip {{
+    padding: 5px 8px;
+    color: white;
+    background-color: {COULEURS["gris_fonce"]};
+    border: none;
+    border-radius: 4px;
 }}
 """

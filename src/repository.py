@@ -4,7 +4,7 @@ Encapsule toutes les requêtes SQL pour les entités Classe, Eleve, Paiement.
 """
 import sqlite3
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from src.models import Classe, Eleve, Paiement, SoldeEleve
 
@@ -117,7 +117,11 @@ class PaiementRepository:
     def lister_par_eleve(self, id_eleve: int) -> List[Paiement]:
         cur = self.db.curseur()
         cur.execute(
-            "SELECT * FROM paiements WHERE id_eleve = ? ORDER BY date_paiement DESC",
+            """
+            SELECT * FROM paiements
+            WHERE id_eleve = ?
+            ORDER BY date_paiement DESC, id_paiement DESC
+            """,
             (id_eleve,)
         )
         return [Paiement(**dict(row)) for row in cur.fetchall()]
@@ -139,6 +143,53 @@ class PaiementRepository:
               paiement.mode_paiement, paiement.numero_recu, paiement.id_eleve))
         self.db.valider()
         return cur.lastrowid
+
+    def prochain_numero_recu(self, annee: int) -> str:
+        """Retourne le prochain numéro après le plus grand numéro existant."""
+        cur = self.db.curseur()
+        prefixe = f"REC-{annee}-"
+        cur.execute(
+            """
+            SELECT COALESCE(MAX(CAST(substr(numero_recu, ?) AS INTEGER)), 0)
+            FROM paiements
+            WHERE numero_recu LIKE ?
+              AND length(substr(numero_recu, ?)) > 0
+              AND substr(numero_recu, ?) NOT GLOB '*[^0-9]*'
+            """,
+            (len(prefixe) + 1, f"{prefixe}%", len(prefixe) + 1, len(prefixe) + 1),
+        )
+        return f"{prefixe}{int(cur.fetchone()[0]) + 1:06d}"
+
+    def ajouter_avec_numero_recu(
+        self, paiement: Paiement, annee: int
+    ) -> Tuple[int, str]:
+        """Attribue et insère le numéro dans une transaction SQLite exclusive."""
+        connexion = self.db.connexion
+        if connexion is None:
+            raise RuntimeError("Connexion non ouverte. Appelez connecter() d'abord.")
+
+        connexion.execute("BEGIN IMMEDIATE")
+        try:
+            numero_recu = self.prochain_numero_recu(annee)
+            cur = connexion.execute(
+                """
+                INSERT INTO paiements
+                    (date_paiement, montant, mode_paiement, numero_recu, id_eleve)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    paiement.date_paiement,
+                    paiement.montant,
+                    paiement.mode_paiement,
+                    numero_recu,
+                    paiement.id_eleve,
+                ),
+            )
+            connexion.commit()
+            return cur.lastrowid, numero_recu
+        except Exception:
+            connexion.rollback()
+            raise
 
     def compter_recus_annee(self, annee: int) -> int:
         """Compte le nombre de reçus émis pour une année donnée."""

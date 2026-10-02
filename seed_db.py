@@ -8,15 +8,37 @@ from pathlib import Path
 RACINE = Path(__file__).parent
 DB_PATH = RACINE / "data" / "edupaie.db"
 
+# Les données de démonstration ne doivent jamais effacer des données existantes.
+if not DB_PATH.is_file():
+    raise SystemExit("Base introuvable. Lancez d'abord python init_db.py.")
+
 # Connexion
 connexion = sqlite3.connect(DB_PATH)
 connexion.execute("PRAGMA foreign_keys = ON")
 curseur = connexion.cursor()
 
-# Nettoyage
-curseur.execute("DELETE FROM paiements")
-curseur.execute("DELETE FROM eleves")
-curseur.execute("DELETE FROM classes")
+curseur.execute("SELECT COUNT(*) FROM classes")
+classes_existantes = curseur.fetchone()[0]
+curseur.execute("SELECT COUNT(*) FROM eleves")
+eleves_existants = curseur.fetchone()[0]
+curseur.execute("SELECT COUNT(*) FROM paiements")
+paiements_existants = curseur.fetchone()[0]
+curseur.execute(
+    "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+    "AND name IN ('administrateur', 'mot_de_passe_sauvegarde') LIMIT 1"
+)
+application_configuree = curseur.fetchone() is not None
+if (
+    classes_existantes
+    or eleves_existants
+    or paiements_existants
+    or application_configuree
+):
+    connexion.close()
+    raise SystemExit(
+        "La base contient déjà des données scolaires. Le jeu de démonstration "
+        "n'a pas été inséré et aucune donnée n'a été modifiée."
+    )
 
 # =====================================================================
 # 1. CLASSES
@@ -100,13 +122,13 @@ connexion.commit()
 
 # Résumé
 curseur.execute("SELECT COUNT(*) FROM classes")
-print(f"✅ {curseur.fetchone()[0]} classes insérées")
+print(f"{curseur.fetchone()[0]} classes insérées")
 curseur.execute("SELECT COUNT(*) FROM eleves")
-print(f"✅ {curseur.fetchone()[0]} élèves insérés")
+print(f"{curseur.fetchone()[0]} élèves insérés")
 curseur.execute("SELECT COUNT(*) FROM paiements")
-print(f"✅ {curseur.fetchone()[0]} paiements insérés")
+print(f"{curseur.fetchone()[0]} paiements insérés")
 
 curseur.close()
 connexion.close()
 
-print("\n🎉 Base de données peuplée avec succès !")
+print("\nBase de données peuplée avec succès !")
