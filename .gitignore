@@ -8,7 +8,8 @@ __pycache__/
 *.egg-info/
 
 # Base de données (générée)
-data/*.db
+# Base de données et fichiers générés
+data/
 
 # Build PyInstaller
 build/

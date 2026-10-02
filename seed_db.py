@@ -5,6 +5,12 @@ EduPaie — Insertion du jeu de données de test.
 import sqlite3
 from pathlib import Path
 
+from src.constants import (
+    ANNEE_SCOLAIRE_DEFAUT,
+    CLASSES_ETABLISSEMENT,
+    niveau_de_classe,
+)
+
 RACINE = Path(__file__).parent
 DB_PATH = RACINE / "data" / "edupaie.db"
 
@@ -44,9 +50,8 @@ if (
 # 1. CLASSES
 # =====================================================================
 classes = [
-    ("6ème A", "6ème", "2026-2027"),
-    ("6ème B", "6ème", "2026-2027"),
-    ("5ème A", "5ème", "2026-2027"),
+    (nom, niveau_de_classe(nom), ANNEE_SCOLAIRE_DEFAUT)
+    for nom in CLASSES_ETABLISSEMENT
 ]
 curseur.executemany(
     "INSERT INTO classes (nom_classe, niveau, annee_scolaire) VALUES (?, ?, ?)",

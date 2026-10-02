@@ -6,6 +6,12 @@ import sqlite3
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+from src.constants import (
+    ANNEE_SCOLAIRE_DEFAUT,
+    CLASSES_ETABLISSEMENT,
+    niveau_de_classe,
+    ordre_classe,
+)
 from src.models import Classe, Eleve, Paiement, SoldeEleve
 
 
@@ -46,8 +52,47 @@ class ClasseRepository:
 
     def lister_toutes(self) -> List[Classe]:
         cur = self.db.curseur()
-        cur.execute("SELECT * FROM classes ORDER BY nom_classe")
-        return [Classe(**dict(row)) for row in cur.fetchall()]
+        cur.execute("SELECT * FROM classes")
+        classes = [Classe(**dict(row)) for row in cur.fetchall()]
+        return sorted(classes, key=lambda classe: ordre_classe(classe.nom_classe))
+
+    def ajouter_classes_etablissement(
+        self, annee_scolaire: str = ANNEE_SCOLAIRE_DEFAUT
+    ):
+        """Ajoute les classes standard manquantes sans modifier les inscriptions."""
+        cur = self.db.curseur()
+        cur.executemany(
+            """
+            INSERT OR IGNORE INTO classes (nom_classe, niveau, annee_scolaire)
+            VALUES (?, ?, ?)
+            """,
+            [
+                (nom, niveau_de_classe(nom), annee_scolaire)
+                for nom in CLASSES_ETABLISSEMENT
+            ],
+        )
+        self.db.valider()
+
+    def ajouter(self, nom_classe: str, niveau: str, annee_scolaire: str) -> int:
+        """Ajoute une classe et retourne son identifiant."""
+        try:
+            cur = self.db.curseur()
+            cur.execute(
+                """
+                INSERT INTO classes (nom_classe, niveau, annee_scolaire)
+                VALUES (?, ?, ?)
+                """,
+                (nom_classe, niveau, annee_scolaire),
+            )
+        except sqlite3.IntegrityError as exc:
+            if "UNIQUE constraint failed" not in str(exc):
+                raise
+            raise ValueError(
+                f"La classe « {nom_classe} » existe déjà pour l'année "
+                f"scolaire {annee_scolaire}."
+            ) from exc
+        self.db.valider()
+        return cur.lastrowid
 
     def trouver_par_id(self, id_classe: int) -> Optional[Classe]:
         cur = self.db.curseur()

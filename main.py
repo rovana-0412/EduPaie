@@ -25,6 +25,7 @@ from src.repository import (
     EleveRepository,
     PaiementRepository,
 )
+from src.constants import ANNEE_SCOLAIRE_DEFAUT
 from src.auth import AuthService
 from src.backup import BackupError, BackupService
 from src.service import EleveService, PaiementService
@@ -52,6 +53,9 @@ def main():
         if dialogue_connexion.exec() != QDialog.DialogCode.Accepted:
             return
 
+        classe_repo = ClasseRepository(db)
+        classe_repo.ajouter_classes_etablissement(ANNEE_SCOLAIRE_DEFAUT)
+
         try:
             chemin_sauvegarde = backup_service.creer_sauvegarde_chiffree(
                 DB_PATH, dialogue_connexion.mot_de_passe_sauvegarde
@@ -66,7 +70,6 @@ def main():
             )
             return 1
 
-        classe_repo = ClasseRepository(db)
         eleve_repo = EleveRepository(db)
         paiement_repo = PaiementRepository(db)
 

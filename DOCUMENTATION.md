@@ -56,6 +56,7 @@ d'accéder à SQLite.
 |---|---|
 | `main.py` | Démarrage, connexion à la base, authentification, sauvegarde automatique |
 | `src/models.py` | Modèles `Classe`, `Eleve`, `Paiement` et `SoldeEleve` |
+| `src/constants.py` | Classes de l'établissement, année par défaut et ordre d'affichage |
 | `src/repository.py` | Connexion SQLite et opérations sur les classes, élèves et paiements |
 | `src/service.py` | Validation des élèves/paiements, soldes et numérotation des reçus |
 | `src/date_utils.py` | Validation stricte des dates ISO |
@@ -63,6 +64,7 @@ d'accéder à SQLite.
 | `src/backup.py` | Configuration du mot de passe dédié, sauvegarde et restauration chiffrées |
 | `src/ui/main_window.py` | Liste principale, recherche, filtre et actions sur les élèves |
 | `src/ui/eleve_form.py` | Formulaire d'ajout/modification d'élève |
+| `src/ui/classe_dialog.py` | Dialogue de création d'une classe personnalisée |
 | `src/ui/paiement_dialog.py` | Formulaire d'enregistrement de paiement |
 | `src/ui/fiche_eleve.py` | Fiche financière, historique et accès aux reçus |
 | `src/ui/tableau_bord.py` | Indicateurs et liste filtrée par statut |
@@ -72,6 +74,7 @@ d'accéder à SQLite.
 | `init_db.py` | Création protégée d'une nouvelle base |
 | `seed_db.py` | Insertion protégée des données de démonstration |
 | `restore_backup.py` | Outil en ligne de commande pour restaurer une sauvegarde |
+| `reset_password.py` | Remplacement explicite du mot de passe administrateur oublié |
 | `schema.sql` | Schéma initial de la base métier |
 
 ---
@@ -157,6 +160,15 @@ modifiable; le service valide aussi les données reçues avant enregistrement.
 - `schema.sql` contient des `DROP TABLE` pour la création initiale et ne doit
   pas être exécuté manuellement sur une base utilisée.
 
+### Classes de l'établissement
+
+La liste standard comprend 16 classes : 6ème A/B, 5ème A/B, 4ème A/B, 3ème A/B,
+2nd A4/S, 1ère A4/D/C et Tle A4/D/C. Après connexion réussie, l'application
+ajoute par `INSERT OR IGNORE` les classes manquantes pour l'année par défaut
+`2026-2027`. L'opération est répétable et ne modifie pas les élèves, paiements
+ou classes d'autres années. Les formulaires et le filtre du tableau de bord
+affichent les classes dans l'ordre scolaire défini.
+
 ---
 
 ## 5. Authentification et sauvegardes
@@ -192,6 +204,15 @@ vérifie l'intégrité SQLite, la présence des tables métier et les clés étr
 Si une base existe déjà, une sauvegarde chiffrée de sécurité est créée avant le
 remplacement.
 
+### Mot de passe administrateur oublié
+
+Le mot de passe de connexion est conservé sous forme d'empreinte et ne peut pas
+être retrouvé. Sur le poste autorisé, fermer EduPaie puis exécuter
+`python reset_password.py`. Le script exige la confirmation `REINITIALISER`,
+puis demande deux fois un nouveau mot de passe d'au moins 10 caractères. Il
+remplace uniquement l'empreinte du compte existant : identifiant, données métier,
+mot de passe de sauvegarde et reçus PDF sont conservés.
+
 ### Limites de protection
 
 - Le fichier SQLite actif n'est pas chiffré.
@@ -212,14 +233,23 @@ remplacement.
 La liste permet de rechercher les élèves par nom/prénom et de filtrer par classe.
 Les colonnes affichent l'identité, la classe, le montant dû, le solde et le
 statut coloré. Les actions disponibles sont : ajouter, modifier, supprimer,
-ouvrir la fiche, enregistrer un paiement, actualiser et afficher le tableau de
-bord.
+ajouter une classe personnalisée, ouvrir la fiche, enregistrer un paiement,
+actualiser et afficher le tableau de bord.
+
+Une classe personnalisée comprend un nom, un niveau et une année scolaire. Le
+couple nom/année doit être unique; une même classe peut donc être réutilisée lors
+d'une autre année scolaire. Après sa création, elle est proposée dans le filtre
+principal, le tableau de bord et les formulaires d'élève.
 
 ### Tableau de bord
 
 Le tableau de bord affiche le nombre d'élèves, le montant encaissé, le reste à
 recouvrer et le nombre d'élèves non soldés. La liste peut être filtrée par
-statut.
+classe, année scolaire et situation. Les cartes interactives appliquent un
+filtre approprié aux élèves; les indicateurs sont recalculés selon la classe et
+l'année sélectionnées. L'action Actualiser recharge les données depuis la base.
+Le rapport PDF ou imprimé reprend les filtres et les élèves actuellement
+affichés.
 
 ### Fiche d'élève
 
@@ -288,9 +318,8 @@ l'ouverture de `data/edupaie.db`.
 - **Historique des inscriptions** : un élève possède actuellement une classe et
   une année scolaire dans son dossier; le modèle ne gère pas un historique
   complet d'inscriptions sur plusieurs années.
-- **Gestion des classes** : les classes sont lues depuis la base, mais l'interface
-  actuelle ne fournit pas de fonctions complètes de création/modification/
-  suppression de classes.
+- **Gestion des classes** : l'interface permet d'ajouter des classes, mais pas
+  encore de modifier ou supprimer une classe.
 - **Corrections de paiements** : l'interface ne propose pas de modification ou de
   suppression de paiements ni de journal d'audit.
 - **Export** : pas d'export CSV/Excel ou de rapports périodiques intégrés.
@@ -314,4 +343,3 @@ l'ouverture de `data/edupaie.db`.
 | Chiffrement des sauvegardes | `cryptography` / Fernet |
 | Tests | `unittest` |
 | Packaging | PyInstaller |
-

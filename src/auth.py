@@ -66,6 +66,41 @@ class AuthService:
             raise ValueError("Le compte administrateur est déjà configuré.") from exc
         self.db.valider()
 
+    def reinitialiser_mot_de_passe(self, mot_de_passe: str):
+        """Remplace l'empreinte du compte existant sans modifier son identifiant."""
+        if len(mot_de_passe) < self.LONGUEUR_MIN_MOT_DE_PASSE:
+            raise ValueError("Le mot de passe doit contenir au moins 10 caractères.")
+        if not self.compte_configure():
+            raise ValueError("Aucun compte administrateur n'est configuré.")
+
+        sel = os.urandom(16)
+        empreinte = hashlib.pbkdf2_hmac(
+            "sha256",
+            mot_de_passe.encode("utf-8"),
+            sel,
+            self.ITERATIONS,
+        )
+        connexion = self.db.connexion
+        if connexion is None:
+            raise RuntimeError("Connexion non ouverte. Appelez connecter() d'abord.")
+
+        connexion.execute("BEGIN IMMEDIATE")
+        try:
+            cur = connexion.execute(
+                """
+                UPDATE administrateur
+                SET sel = ?, empreinte_mot_de_passe = ?, iterations = ?
+                WHERE id = 1
+                """,
+                (sel, empreinte, self.ITERATIONS),
+            )
+            if cur.rowcount != 1:
+                raise ValueError("Aucun compte administrateur n'est configuré.")
+            connexion.commit()
+        except Exception:
+            connexion.rollback()
+            raise
+
     def verifier(self, identifiant: str, mot_de_passe: str) -> bool:
         """Vérifie les identifiants sans jamais conserver le mot de passe en clair."""
         cur = self.db.curseur()

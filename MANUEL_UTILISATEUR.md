@@ -25,6 +25,21 @@ python restore_backup.py data/backups/nom-de-la-sauvegarde.enc
 La restauration vérifie le fichier et crée une sauvegarde de sécurité chiffrée de
 la base actuelle avant le remplacement.
 
+### Mot de passe administrateur oublié
+
+Le mot de passe de connexion n'est pas récupérable. Pour le remplacer, fermez
+EduPaie et lancez PowerShell ou un terminal dans le dossier du projet :
+
+```bash
+python reset_password.py
+```
+
+Saisissez `REINITIALISER` pour confirmer, puis entrez deux fois un nouveau mot de
+passe d'au moins 10 caractères. L'identifiant reste inchangé. Cette opération ne
+modifie ni les élèves, ni les paiements, ni le mot de passe de sauvegarde, ni les
+reçus PDF. Relancez ensuite EduPaie et connectez-vous avec le même identifiant et
+le nouveau mot de passe.
+
 ---
 
 ## ➕ Enregistrer un nouvel élève
@@ -36,7 +51,8 @@ la base actuelle avant le remplacement.
    - **Date de naissance** (format AAAA-MM-JJ, ex : 2014-03-15)
    - **Année scolaire** (ex : 2026-2027)
    - **Montant total dû** (en F CFA, ex : 150000)
-   - **Classe** (choisir dans la liste)
+   - **Classe** (choisir parmi 6ème A/B, 5ème A/B, 4ème A/B, 3ème A/B,
+     2nd A4/S, 1ère A4/D/C ou Tle A4/D/C)
 3. Cliquer sur **Valider**
 
 > 💡 **Astuce :** une fenêtre d'erreur s'affiche si un champ est mal rempli.
@@ -94,7 +110,16 @@ Le reçu est généré sur une seule page au format compact A6.
    - 💰 Total encaissé
    - ⏳ Total restant dû
    - ⚠ Nombre d'élèves non soldés
-3. Filtrer par statut : **Tous / Soldé / Partiellement payé / Non payé**
+3. Filtrer par **classe**, **année scolaire** et **situation**
+4. Cliquer sur une carte pour afficher les élèves associés : tous les élèves,
+   ceux ayant payé, ou ceux ayant encore un solde
+5. Utiliser **Actualiser** pour recharger les données
+6. Utiliser **Exporter le rapport PDF** ou **Imprimer le rapport** pour produire
+   un document correspondant aux filtres actuellement appliqués
+
+Les statistiques tiennent compte de la classe et de l'année sélectionnées; le
+filtre de situation agit sur la liste. Le rapport inclut les filtres et les
+élèves affichés.
 
 ---
 
@@ -104,6 +129,16 @@ Le reçu est généré sur une seule page au format compact A6.
 - **Par classe** : utiliser le menu déroulant à droite
 
 Les résultats se filtrent automatiquement.
+
+Les classes de l'établissement sont ajoutées automatiquement à l'année scolaire
+par défaut (`2026-2027`) au démarrage. Les classes déjà enregistrées et les
+inscriptions existantes sont conservées.
+
+Pour créer une classe qui ne figure pas dans la liste, cliquer sur
+**Ajouter une classe**, saisir son nom, son niveau et son année scolaire, puis
+valider. La classe apparaît ensuite dans le filtre et dans le formulaire
+d'inscription des élèves. Un même nom peut être repris pour une autre année,
+mais pas deux fois pour la même année.
 
 ---
 
@@ -123,6 +158,7 @@ Les résultats se filtrent automatiquement.
 - **Erreur "Base de données introuvable"** : lancer `python init_db.py`
 - **Sauvegarde impossible** : vérifier l'espace disque et les droits d'écriture dans `data/`
 - **Mot de passe de sauvegarde perdu** : les sauvegardes existantes ne peuvent pas être déchiffrées
+- **Mot de passe administrateur oublié** : fermer l'application et suivre la procédure `python reset_password.py` ci-dessus
 - **Erreur à l'enregistrement d'un paiement** : vérifier que le montant ne dépasse pas le solde
 
 > La base active et les reçus PDF ne sont pas chiffrés. Protégez l'accès à Windows

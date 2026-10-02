@@ -8,7 +8,8 @@ et de générer des reçus PDF numérotés.
 
 ## 📋 Fonctionnalités
 
-- **Gestion des élèves** : ajouter, modifier, supprimer, rechercher par nom/classe
+- **Gestion des élèves et classes** : ajouter/modifier/supprimer des élèves,
+  ajouter des classes personnalisées, rechercher par nom et filtrer par classe
 - **Enregistrement des paiements** : montant, date, mode (espèces, chèque, virement, Mobile Money)
 - **Calcul automatique du solde** : statut dérivé (Soldé / Partiellement payé / Non payé)
 - **Historique des paiements** : liste chronologique par élève
@@ -83,6 +84,13 @@ python main.py
 2. Remplir le formulaire (nom, prénom, date, montant dû, classe)
 3. Cliquer sur **Valider**
 
+### Ajouter une classe personnalisée
+
+Depuis la fenêtre principale, cliquer sur **Ajouter une classe**, puis renseigner
+son nom, son niveau et son année scolaire. La classe est immédiatement proposée
+dans le filtre et lors de l'inscription d'un élève. Le nom est unique par année
+scolaire.
+
 ### Enregistrer un paiement
 
 1. Sélectionner un élève dans le tableau
@@ -102,7 +110,9 @@ python main.py
 
 1. Cliquer sur **📊 Tableau de bord**
 2. Voir les statistiques (élèves, encaissé, restant dû, non soldés)
-3. Filtrer par statut (Soldé / Partiel / Non payé)
+3. Filtrer par classe, année scolaire et situation
+4. Cliquer sur les cartes pour afficher les élèves concernés
+5. Actualiser les données, exporter le rapport en PDF ou l'imprimer
 
 ---
 
@@ -138,9 +148,15 @@ EduPaie/
 
 La commande `python seed_db.py` insère :
 
-- **3 classes** : 6ème A, 6ème B, 5ème A
+- **16 classes** : 6ème A/B, 5ème A/B, 4ème A/B, 3ème A/B, 2nd A4/S,
+  1ère A4/D/C et Tle A4/D/C
 - **15 élèves** : 5 par classe
-- **12 paiements** : soldés, partiels, non payés
+- **12 paiements** : soldés, partiels et non payés, dans les trois premières
+  classes de la liste
+
+Lors du prochain démarrage réussi, EduPaie ajoutera automatiquement ces classes
+à l'année scolaire par défaut `2026-2027` si elles n'existent pas déjà. Les
+élèves, paiements et classes des autres années ne seront pas modifiés.
 
 ---
 
@@ -208,6 +224,19 @@ Le programme demande le mot de passe dédié. Il vérifie l'intégrité SQLite e
 relations avant le remplacement; la base existante est préalablement sauvegardée
 de façon chiffrée. Ne supprimez pas cette sauvegarde de sécurité avant d'avoir
 vérifié les données restaurées.
+
+### Mot de passe administrateur oublié
+
+Le mot de passe de connexion ne peut pas être retrouvé. Si vous êtes autorisé à
+administrer ce poste, fermez EduPaie puis exécutez `python reset_password.py`
+depuis le dossier du projet. Confirmez l'opération en saisissant `REINITIALISER`,
+puis définissez et confirmez un nouveau mot de passe d'au moins 10 caractères.
+L'identifiant administrateur est conservé; les données scolaires, le mot de passe
+de sauvegarde et les reçus PDF ne sont pas modifiés. Ensuite, relancez
+`python main.py` et utilisez l'identifiant existant avec le nouveau mot de passe.
+
+Cette procédure est une opération locale d'administration : protégez l'accès au
+compte Windows et au dossier du projet.
 
 **Limite importante :** la base SQLite active et les reçus PDF restent des fichiers
 locaux non chiffrés. L'écran de connexion ne remplace pas la protection du compte

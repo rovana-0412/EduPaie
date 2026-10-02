@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
+from src.constants import ANNEE_SCOLAIRE_DEFAUT
 from src.date_utils import valider_date_iso
 from src.models import Eleve
 
@@ -88,8 +89,10 @@ class EleveForm(QDialog):
 
         # Année scolaire
         self.champ_annee = QLineEdit()
-        self.champ_annee.setPlaceholderText("Ex : 2026-2027")
-        self.champ_annee.setText("2026-2027")  # valeur par défaut
+        self.champ_annee.setPlaceholderText(
+            f"Ex : {ANNEE_SCOLAIRE_DEFAUT}"
+        )
+        self.champ_annee.setText(ANNEE_SCOLAIRE_DEFAUT)
         form.addRow("Année scolaire * :", self.champ_annee)
 
         # Montant dû
