@@ -28,7 +28,8 @@ Thumbs.db
 data/recus/
 
 # Captures d'écran (documentation)
-captures/
+# Captures d'écran (documentation) — versionnées pour le livrable
+# captures/
 
 # Fichiers temporaires de test
 test_pdf.py

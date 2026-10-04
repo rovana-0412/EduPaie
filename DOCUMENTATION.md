@@ -263,10 +263,21 @@ après paiement et des emplacements de signature.
 
 ### Captures disponibles
 
-![Fenêtre principale](captures/ecran_liste.png)
+### Captures disponibles
 
-![Tableau de bord](captures/tableau_de_bord.png)
+![Écran de connexion](captures/authentification.png)
 
+![Fenêtre principale](captures/liste_des_eleves.png)
+
+![Formulaire d'ajout d'élève](captures/ajout_eleve.png)
+
+![Enregistrement d'un paiement](captures/enregistrement_paiement.png)
+
+![Fiche élève avec historique](captures/fiche_d_un_eleve.png)
+
+![Reçu PDF](captures/reçu.png)
+
+![Tableau de bord](captures/dashboard.png)
 ---
 
 ## 7. Installation et lancement
